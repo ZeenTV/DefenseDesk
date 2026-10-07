@@ -71,16 +71,21 @@ export function GroupForm() {
         <Controller control={control} name="memberIds" render={({ field }) => {
           const selectedIds = field.value ? field.value.split(',').filter(Boolean) : [];
           return <div className="student-picker" role="group" aria-label="Student members">
-            {students.length ? students.map((person) => <label className="student-option" key={person._id}>
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(person._id)}
-                onChange={(event) => field.onChange(event.target.checked
-                  ? [...selectedIds, person._id].join(',')
-                  : selectedIds.filter((studentId) => studentId !== person._id).join(','))}
-              />
-              <span>{person.name}</span>
-            </label>) : <p className="student-picker-empty">No student accounts available.</p>}
+            {students.length ? students.map((person) => {
+              const selected = selectedIds.includes(person._id);
+              const toggleStudent = () => field.onChange(selected
+                ? selectedIds.filter((studentId) => studentId !== person._id).join(',')
+                : [...selectedIds, person._id].join(','));
+              return <button
+                type="button"
+                className={`student-option${selected ? ' selected' : ''}`}
+                key={person._id}
+                aria-pressed={selected}
+                onClick={toggleStudent}
+              >
+                <span className="student-option-name">{person.name}</span>
+              </button>;
+            }) : <p className="student-picker-empty">No student accounts available.</p>}
           </div>;
         }} />
         {errors.memberIds && <small className="field-error">{errors.memberIds.message}</small>}
