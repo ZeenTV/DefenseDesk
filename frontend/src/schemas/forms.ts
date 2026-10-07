@@ -3,18 +3,19 @@ export const loginSchema = z.object({ email: z.string().email(), password: z.str
 export type LoginInput = z.infer<typeof loginSchema>;
 const cleanEmailPart = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 export const buildAccountName = (firstName: string, middleName: string, lastName: string) => [firstName, middleName, lastName].map((part) => part.trim()).filter(Boolean).join(' ');
-export const generateAccountEmail = (firstName: string, middleName: string, lastName: string) => {
+export const generateAccountEmail = (firstName: string, middleName: string, lastName: string, type: 'student' | 'faculty' = 'student') => {
   const firstInitials = firstName.trim().split(/\s+/).slice(0, 2).map(cleanEmailPart).filter(Boolean).map((part) => part[0]).join('');
   const middleInitial = cleanEmailPart(middleName)[0] || '';
   const surname = cleanEmailPart(lastName);
   const username = `${firstInitials}${middleInitial}${surname}`;
-  return username ? `${username}@student.com` : '';
+  const domain = type === 'faculty' ? 'faculty.com' : 'student.com';
+  return username ? `${username}@${domain}` : '';
 };
 export const userSchema = z.object({ name: z.string().optional(), firstName: z.string().optional(), middleName: z.string().optional(), lastName: z.string().optional(), email: z.string().email().optional(), type: z.enum(['student', 'faculty']), department: z.string().optional(), expertiseTags: z.string().optional(), canChair: z.boolean().optional(), maxDefensesPerDay: z.coerce.number().min(1).max(6).optional() }).superRefine((value, context) => {
   if (value.name === undefined) {
     if (!value.firstName?.trim()) context.addIssue({ code: z.ZodIssueCode.custom, path: ['firstName'], message: 'First name is required' });
     if (!value.lastName?.trim()) context.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], message: 'Last name is required' });
-    if (value.firstName && value.lastName && !generateAccountEmail(value.firstName, value.middleName || '', value.lastName)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], message: 'Enter a name containing letters or numbers to generate an email' });
+    if (value.firstName && value.lastName && !generateAccountEmail(value.firstName, value.middleName || '', value.lastName, value.type)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], message: 'Enter a name containing letters or numbers to generate an email' });
     if (buildAccountName(value.firstName || '', value.middleName || '', value.lastName || '').length > 60) context.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], message: 'The full name must be 60 characters or fewer' });
   } else {
     if (value.name.trim().length < 2 || value.name.trim().length > 60) context.addIssue({ code: z.ZodIssueCode.custom, path: ['name'], message: 'Name must be between 2 and 60 characters' });

@@ -13,7 +13,9 @@ exports.create = asyncHandler(async (req, res) => {
   const body = req.body || {};
   if (!['student', 'faculty'].includes(body.type)) throw new AppError('Type must be student or faculty', 400);
   const password = temporaryPassword();
-  const details = { name: body.name, email: body.email, password, type: body.type, department: body.department, mustChangePassword: true };
+  const emailLocalPart = String(body.email || '').split('@')[0];
+  const emailDomain = body.type === 'faculty' ? 'faculty.com' : 'student.com';
+  const details = { name: body.name, email: `${emailLocalPart}@${emailDomain}`, password, type: body.type, department: body.department, mustChangePassword: true };
   if (body.type === 'faculty') {
     if (!Number.isInteger(body.maxDefensesPerDay) || body.maxDefensesPerDay < 1 || body.maxDefensesPerDay > 6) throw new AppError('Faculty maxDefensesPerDay must be between 1 and 6', 400);
     Object.assign(details, { roles: ['panelist'], expertiseTags: body.expertiseTags, canChair: body.canChair ?? false, maxDefensesPerDay: body.maxDefensesPerDay });
@@ -60,6 +62,8 @@ exports.updateRoles = asyncHandler(async (req, res) => {
     }
     roles.delete('coordinator');
   }
+  const emailLocalPart = user.email.split('@')[0];
+  user.email = `${emailLocalPart}@${grant ? 'coordinator.com' : 'faculty.com'}`;
   user.roles = [...roles];
   await user.save();
   res.json(safeUser(user));

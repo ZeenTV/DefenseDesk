@@ -24,7 +24,7 @@ export function AccountForm() {
   const middleName = watch('middleName') || '';
   const lastName = watch('lastName') || '';
   const selectedDepartment = watch('department') || '';
-  const generatedEmail = generateAccountEmail(firstName, middleName, lastName);
+  const generatedEmail = generateAccountEmail(firstName, middleName, lastName, type);
   const isListedDepartment = academicPrograms.some(({ programs }) => (programs as readonly string[]).includes(selectedDepartment));
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function AccountForm() {
     const payload = {
       ...accountValues,
       name: edit ? values.name : buildAccountName(submittedFirstName || '', submittedMiddleName || '', submittedLastName || ''),
-      email: edit ? values.email : generateAccountEmail(submittedFirstName || '', submittedMiddleName || '', submittedLastName || ''),
+      email: edit ? values.email : generateAccountEmail(submittedFirstName || '', submittedMiddleName || '', submittedLastName || '', values.type),
       expertiseTags: values.expertiseTags?.split(',').map((tag) => tag.trim()).filter(Boolean),
     };
     try {
@@ -72,7 +72,7 @@ export function AccountForm() {
           <label><span>Middle name <span className="muted">(Optional)</span></span><input autoComplete="additional-name" {...register('middleName')} /></label>
           <label>Last name<input autoComplete="family-name" {...register('lastName')} />{errors.lastName && <small className="field-error">{errors.lastName.message}</small>}</label>
         </div>
-        <label>Generated email<input type="email" value={generatedEmail} readOnly placeholder="Complete first and last name to generate email" /><small className="muted">Generated automatically for students and faculty. Middle name adds its first initial.</small></label>
+        <label>Generated email<input type="email" value={generatedEmail} readOnly placeholder="Complete first and last name to generate email" /><small className="muted">{type === 'faculty' ? 'Faculty accounts use @faculty.com.' : 'Student accounts use @student.com.'} Middle name adds its first initial. Coordinator accounts use @coordinator.com.</small></label>
       </>}
 
       <label>Account type<select {...register('type')} disabled={edit}><option value="student">Student</option><option value="faculty">Faculty</option></select>{errors.type && <small className="field-error">{errors.type.message}</small>}</label>
