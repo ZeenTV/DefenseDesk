@@ -1,0 +1,13 @@
+import { Link } from 'react-router-dom';
+import { api } from '../services/api';
+import { useAxiosFetch } from '../hooks/useAxiosFetch';
+import { Loading, ErrorState, EmptyState } from '../components/common/States';
+import { Page } from './Page';
+import type { Defense } from '../types';
+const transitions: Record<string, string> = { scheduled: 'defended', defended: 'revisions', revisions: 'cleared' };
+export function Defenses() {
+  const { data, loading, error, reload } = useAxiosFetch<Defense[]>('/defenses');
+  const advance = async (defense: Defense) => { try { await api.patch(`/defenses/${defense._id}/status`, { status: transitions[defense.status] }); await reload(); window.alert(`Defense marked ${transitions[defense.status]}.`); } catch (cause: unknown) { window.alert((cause as { response?: { data?: { message?: string } } }).response?.data?.message || 'Status update failed'); } };
+  const remove = async (defense: Defense) => { if (!window.confirm(`Delete the defense for ${defense.group.title}?`)) return; try { await api.delete(`/defenses/${defense._id}`); await reload(); window.alert('Defense deleted.'); } catch (cause: unknown) { window.alert((cause as { response?: { data?: { message?: string } } }).response?.data?.message || 'Delete failed'); } };
+  return <Page eyebrow="SCHEDULING" title="Defense calendar" description="Review assignments, rooms, and defense progress." action={<Link className="button button-primary" to="/defenses/new">Schedule defense</Link>}>{loading ? <Loading /> : error ? <ErrorState message={error} /> : !data?.length ? <EmptyState>No defenses have been scheduled.</EmptyState> : <div className="table-wrap"><table><thead><tr><th>Project</th><th>Date and time</th><th>Room</th><th>Panel</th><th>Status</th><th>Actions</th></tr></thead><tbody>{data.map((defense) => <tr key={defense._id}><td><strong>{defense.group.title}</strong><small>{defense.group.projectArea}</small></td><td>{new Date(defense.startTime).toLocaleString()}<small>to {new Date(defense.endTime).toLocaleTimeString()}</small></td><td>{defense.room.name}</td><td><strong>{defense.chair.name} · Chair</strong><small>{defense.members.map((member) => member.name).join(', ')}</small></td><td><span className="status-pill">{defense.status}</span></td><td className="row-actions">{defense.status === 'scheduled' && <Link to={`/defenses/${defense._id}/edit`}>Edit</Link>}{transitions[defense.status] && <button className="link-button" onClick={() => void advance(defense)}>Mark {transitions[defense.status]}</button>}<button className="link-button danger-link" onClick={() => void remove(defense)}>Delete</button></td></tr>)}</tbody></table></div>}</Page>;
+}

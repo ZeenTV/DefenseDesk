@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export function Page({ eyebrow, title, description, action, children }: { eyebrow?: string; title: string; description?: string; action?: ReactNode; children: ReactNode }) { return <section className="page"><div className="page-heading"><div>{eyebrow && <div className="eyebrow">{eyebrow}</div>}<h1>{title}</h1>{description && <p>{description}</p>}</div>{action}</div>{children}</section>; }

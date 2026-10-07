@@ -1,0 +1,11 @@
+const router = require('express').Router();
+const controller = require('../controllers/groupController');
+const { protect, restrictTo } = require('../middlewares/auth');
+router.use(protect, restrictTo('coordinator'));
+router.get('/', controller.list);
+router.post('/', controller.create);
+router.get('/:id/panel-suggestions', controller.panelSuggestions);
+router.get('/:id', controller.get);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
+module.exports = router;

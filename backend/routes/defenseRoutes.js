@@ -1,0 +1,15 @@
+const router = require('express').Router();
+const controller = require('../controllers/defenseController');
+const evaluations = require('../controllers/evaluationController');
+const { protect, restrictTo } = require('../middlewares/auth');
+router.use(protect);
+router.get('/availability', restrictTo('coordinator'), controller.availability);
+router.get('/mine', restrictTo('faculty', 'student'), controller.mine);
+router.get('/:id/evaluations', restrictTo('coordinator', 'faculty'), evaluations.listForDefense);
+router.get('/', restrictTo('coordinator'), controller.list);
+router.post('/', restrictTo('coordinator'), controller.create);
+router.get('/:id', restrictTo('coordinator'), controller.get);
+router.put('/:id', restrictTo('coordinator'), controller.update);
+router.patch('/:id/status', restrictTo('coordinator'), controller.changeStatus);
+router.delete('/:id', restrictTo('coordinator'), controller.remove);
+module.exports = router;

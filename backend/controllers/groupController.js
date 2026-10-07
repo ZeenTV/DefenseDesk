@@ -1,0 +1,42 @@
+const Group = require('../models/Group');
+const User = require('../models/User');
+const Defense = require('../models/Defense');
+const Evaluation = require('../models/Evaluation');
+const AppError = require('../utils/AppError');
+const asyncHandler = require('../utils/asyncHandler');
+const validatePeople = async (body, excludingId) => {
+  const [adviser, members] = await Promise.all([User.findById(body.adviser), User.find({ _id: { $in: body.members || [] } })]);
+  if (!adviser || adviser.type !== 'faculty') throw new AppError('A valid faculty adviser is required', 400);
+  if (!Array.isArray(body.members) || members.length !== body.members.length || members.some((user) => user.type !== 'student')) throw new AppError('Group members must be student accounts', 400);
+  const occupied = await Group.findOne({ members: { $in: body.members }, ...(excludingId ? { _id: { $ne: excludingId } } : {}) });
+  if (occupied) throw new AppError('A student can belong to only one capstone group', 400);
+};
+exports.list = asyncHandler(async (req, res) => res.json(await Group.find().populate('members', 'name email').populate('adviser', 'name email').sort({ title: 1 })));
+exports.get = asyncHandler(async (req, res) => { const group = await Group.findById(req.params.id).populate('members', 'name email').populate('adviser', 'name email'); if (!group) throw new AppError('Record not found', 404); res.json(group); });
+exports.create = asyncHandler(async (req, res) => { await validatePeople(req.body || {}); const group = await Group.create({ title: req.body.title, members: req.body.members, adviser: req.body.adviser, projectArea: req.body.projectArea }); res.status(201).json(group); });
+exports.update = asyncHandler(async (req, res) => {
+  const group = await Group.findById(req.params.id);
+  if (!group) throw new AppError('Record not found', 404);
+  const body = req.body || {};
+  if ('status' in body) throw new AppError('Group status is synchronized from its defense', 400);
+  const candidate = { adviser: body.adviser ?? group.adviser, members: body.members ?? group.members };
+  await validatePeople(candidate, group._id);
+  const defense = await Defense.findOne({ group: group._id });
+  if (defense && [defense.chair, ...defense.members].some((panelist) => panelist.toString() === candidate.adviser.toString())) throw new AppError('A defense panelist cannot become that group adviser', 400);
+  for (const key of ['title', 'members', 'adviser', 'projectArea']) if (body[key] !== undefined) group[key] = body[key];
+  await group.save();
+  res.json(group);
+});
+exports.remove = asyncHandler(async (req, res) => { const group = await Group.findById(req.params.id); if (!group) throw new AppError('Record not found', 404); if (await Defense.exists({ group: group._id })) throw new AppError('Delete the group defense before deleting the group', 400); await group.deleteOne(); res.json({ message: 'Group deleted' }); });
+exports.panelSuggestions = asyncHandler(async (req, res) => {
+  const group = await Group.findById(req.params.id);
+  if (!group) throw new AppError('Record not found', 404);
+  const faculty = await User.find({ type: 'faculty', isActive: true, _id: { $ne: group.adviser } }).select('name expertiseTags canChair maxDefensesPerDay roles');
+  const workload = await Defense.aggregate([{ $match: { status: 'scheduled' } }, { $project: { panel: ['$chair', '$members'] } }, { $unwind: '$panel' }, { $group: { _id: '$panel', count: { $sum: 1 } } }]);
+  const loads = new Map(workload.map((row) => [row._id.toString(), row.count]));
+  const rank = (user) => ({ ...user.toObject(), expertiseOverlap: (user.expertiseTags || []).filter((tag) => tag.toLowerCase() === group.projectArea.toLowerCase()).length, currentWorkload: loads.get(user._id.toString()) || 0 });
+  const ranked = faculty.map(rank).sort((a, b) => b.expertiseOverlap - a.expertiseOverlap || a.currentWorkload - b.currentWorkload || a.name.localeCompare(b.name));
+  const chair = ranked.find((user) => user.canChair) || null;
+  const members = ranked.filter((user) => !chair || user._id.toString() !== chair._id.toString()).slice(0, 2);
+  res.json({ chair, members, eligibleFaculty: ranked });
+});
