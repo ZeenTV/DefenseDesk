@@ -23,19 +23,20 @@ app.use('/api/stats', require('./routes/statsRoutes'));
 app.use(notFound);
 app.use(errorHandler);
 
+// Ilabas ang database connection para tumakbo rin sa Vercel
+const initializeApp = async () => {
+  if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
+    console.error('MONGO_URI and JWT_SECRET must be configured');
+  }
+  await connectDB();
+};
+
+initializeApp().catch(console.error);
+
+// Ito na lang ang nasa loob ng if block para sa local run
 if (require.main === module) {
-  const start = async () => {
-    if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
-      throw new Error('MONGO_URI and JWT_SECRET must be configured');
-    }
-    await connectDB();
-    const port = Number(process.env.PORT) || 3000;
-    app.listen(port, () => console.log(`DefenseDesk API listening at http://localhost:${port}`));
-  };
-  start().catch((error) => {
-    console.error(error.message);
-    process.exit(1);
-  });
+  const port = Number(process.env.PORT) || 3000;
+  app.listen(port, () => console.log(`DefenseDesk API listening at http://localhost:${port}`));
 }
 
 module.exports = app;
