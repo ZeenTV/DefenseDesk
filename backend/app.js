@@ -13,6 +13,10 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(logger);
 app.get('/', (_req, res) => res.status(200).send('DefenseDesk API is running.'));
+// Sa Vercel, siguraduhing nakakonekta muna ang MongoDB bago iproseso ang API request.
+app.use('/api', (_req, _res, next) => {
+  connectDB().then(() => next()).catch(next);
+});
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/groups', require('./routes/groupRoutes'));
@@ -23,17 +27,6 @@ app.use('/api/stats', require('./routes/statsRoutes'));
 app.use(notFound);
 app.use(errorHandler);
 
-// Ilabas ang database connection para tumakbo rin sa Vercel
-const initializeApp = async () => {
-  if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
-    console.error('MONGO_URI and JWT_SECRET must be configured');
-  }
-  await connectDB();
-};
-
-initializeApp().catch(console.error);
-
-// Ito na lang ang nasa loob ng if block para sa local run
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
   app.listen(port, () => console.log(`DefenseDesk API listening at http://localhost:${port}`));
