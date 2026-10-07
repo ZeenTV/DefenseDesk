@@ -14,3 +14,5 @@
 .inline-form>.button-primary{margin-top:12px}
 
 .brand-mark{object-fit:contain}
+.evaluation-empty{margin-top:12px;padding:12px 14px;border:1px solid #e7ebe4;border-radius:10px;background:#fbfcfa;color:#77877f;font-size:12px}.evaluation-empty .link-button{margin-left:8px}.evaluation-error{border-color:#f0d8d2;background:#fff8f6;color:#a74f40}.evaluation-review{display:grid;gap:6px;margin-top:10px;padding:13px 15px;border:1px solid #e7ebe4;border-radius:11px;background:#fbfcfa;color:#63766e;font-size:12px}.evaluation-review strong{color:#294f46}.evaluation-review small{color:#82918b;white-space:pre-wrap}.evaluation-modal{width:min(620px,100%);max-height:calc(100vh - 40px);overflow-y:auto}.score-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.65fr) auto;align-items:end;gap:12px}.score-remove{margin-bottom:13px}.modal-backdrop{overflow-y:auto}
+@media(max-width:700px){.score-row{grid-template-columns:1fr}.score-remove{margin:0}}
