@@ -13,10 +13,10 @@ exports.create = asyncHandler(async (req, res) => {
   const body = req.body || {};
   if (!['student', 'faculty'].includes(body.type)) throw new AppError('Type must be student or faculty', 400);
   const password = temporaryPassword();
-  const details = { name: body.name, email: body.email, password, type: body.type, mustChangePassword: true };
+  const details = { name: body.name, email: body.email, password, type: body.type, department: body.department, mustChangePassword: true };
   if (body.type === 'faculty') {
     if (!Number.isInteger(body.maxDefensesPerDay) || body.maxDefensesPerDay < 1 || body.maxDefensesPerDay > 6) throw new AppError('Faculty maxDefensesPerDay must be between 1 and 6', 400);
-    Object.assign(details, { roles: ['panelist'], department: body.department, expertiseTags: body.expertiseTags, canChair: body.canChair ?? false, maxDefensesPerDay: body.maxDefensesPerDay });
+    Object.assign(details, { roles: ['panelist'], expertiseTags: body.expertiseTags, canChair: body.canChair ?? false, maxDefensesPerDay: body.maxDefensesPerDay });
   }
   const user = await User.create(details);
   res.status(201).json({ user: safeUser(user), temporaryPassword: password });

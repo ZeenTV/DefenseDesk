@@ -5,14 +5,14 @@ const Room = require('../models/Room');
 const Defense = require('../models/Defense');
 const Evaluation = require('../models/Evaluation');
 
-test('faculty defaults to the panelist role and student fields are removed', async () => {
+test('faculty defaults to the panelist role and student faculty-only fields are removed', async () => {
   const faculty = new User({ name: 'Faculty Member', email: 'faculty@example.edu', password: 'secret1', type: 'faculty' });
   await faculty.validate();
   assert.deepEqual(faculty.roles, ['panelist']);
   const student = new User({ name: 'Student Member', email: 'student@example.edu', password: 'secret1', type: 'student', roles: ['coordinator'], department: 'IT' });
   await student.validate();
   assert.equal(student.roles, undefined);
-  assert.equal(student.department, undefined);
+  assert.equal(student.department, 'IT');
 });
 
 test('room capacity must be at least one', async () => {

@@ -7,6 +7,7 @@ import { buildAccountName, generateAccountEmail, userSchema, type UserInput } fr
 import { Page } from './Page';
 import { Loading, ErrorState } from '../components/common/States';
 import type { User } from '../types';
+import { academicPrograms } from '../constants/academicPrograms';
 
 export function AccountForm() {
   const { id } = useParams();
@@ -21,7 +22,9 @@ export function AccountForm() {
   const firstName = watch('firstName') || '';
   const middleName = watch('middleName') || '';
   const lastName = watch('lastName') || '';
+  const selectedDepartment = watch('department') || '';
   const generatedEmail = generateAccountEmail(firstName, middleName, lastName);
+  const isListedDepartment = academicPrograms.some(({ programs }) => (programs as readonly string[]).includes(selectedDepartment));
 
   useEffect(() => {
     if (!id) return;
@@ -72,8 +75,14 @@ export function AccountForm() {
       </>}
 
       <label>Account type<select {...register('type')} disabled={edit}><option value="student">Student</option><option value="faculty">Faculty</option></select>{errors.type && <small className="field-error">{errors.type.message}</small>}</label>
+      <label>Department / Academic program<select {...register('department')}>
+        <option value="">Select a department or program</option>
+        {selectedDepartment && !isListedDepartment && <option value={selectedDepartment}>{selectedDepartment}</option>}
+        {academicPrograms.map(({ department, programs }) => <optgroup key={department} label={department}>
+          {programs.map((program) => <option key={program} value={program}>{program}</option>)}
+        </optgroup>)}
+      </select></label>
       {type === 'faculty' && <>
-        <label>Department<input {...register('department')} /></label>
         <label>Expertise tags <span className="muted">comma separated</span><input {...register('expertiseTags')} placeholder="software engineering, data science" /></label>
         <div className="form-two">
           <label>Maximum defenses per day<input type="number" min="1" max="6" {...register('maxDefensesPerDay')} />{errors.maxDefensesPerDay && <small className="field-error">{errors.maxDefensesPerDay.message}</small>}</label>
