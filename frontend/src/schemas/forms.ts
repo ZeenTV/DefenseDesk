@@ -3,15 +3,15 @@ export const loginSchema = z.object({ email: z.string().email(), password: z.str
 export type LoginInput = z.infer<typeof loginSchema>;
 const cleanEmailPart = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 export const buildAccountName = (firstName: string, middleName: string, lastName: string) => [firstName, middleName, lastName].map((part) => part.trim()).filter(Boolean).join(' ');
-export const generateAccountEmail = (firstName: string, middleName: string, lastName: string, type: 'student' | 'faculty' = 'student') => {
+export const generateAccountEmail = (firstName: string, middleName: string, lastName: string, type: 'student' | 'faculty' | 'coordinator' = 'student') => {
   const firstInitials = firstName.trim().split(/\s+/).slice(0, 2).map(cleanEmailPart).filter(Boolean).map((part) => part[0]).join('');
   const middleInitial = cleanEmailPart(middleName)[0] || '';
   const surname = cleanEmailPart(lastName);
   const username = `${firstInitials}${middleInitial}${surname}`;
-  const domain = type === 'faculty' ? 'faculty.com' : 'student.com';
+  const domain = type === 'coordinator' ? 'coordinator.com' : type === 'faculty' ? 'faculty.com' : 'student.com';
   return username ? `${username}@${domain}` : '';
 };
-export const userSchema = z.object({ name: z.string().optional(), firstName: z.string().optional(), middleName: z.string().optional(), lastName: z.string().optional(), email: z.string().email().optional(), type: z.enum(['student', 'faculty']), department: z.string().optional(), expertiseTags: z.string().optional(), canChair: z.boolean().optional(), maxDefensesPerDay: z.coerce.number().min(1).max(6).optional() }).superRefine((value, context) => {
+export const userSchema = z.object({ name: z.string().optional(), firstName: z.string().optional(), middleName: z.string().optional(), lastName: z.string().optional(), email: z.string().email().optional(), type: z.enum(['student', 'faculty', 'coordinator']), department: z.string().optional(), expertiseTags: z.string().optional(), canChair: z.boolean().optional(), maxDefensesPerDay: z.coerce.number().min(1).max(6).optional() }).superRefine((value, context) => {
   if (value.name === undefined) {
     if (!value.firstName?.trim()) context.addIssue({ code: z.ZodIssueCode.custom, path: ['firstName'], message: 'First name is required' });
     if (!value.lastName?.trim()) context.addIssue({ code: z.ZodIssueCode.custom, path: ['lastName'], message: 'Last name is required' });
@@ -21,7 +21,7 @@ export const userSchema = z.object({ name: z.string().optional(), firstName: z.s
     if (value.name.trim().length < 2 || value.name.trim().length > 60) context.addIssue({ code: z.ZodIssueCode.custom, path: ['name'], message: 'Name must be between 2 and 60 characters' });
     if (!value.email) context.addIssue({ code: z.ZodIssueCode.custom, path: ['email'], message: 'Email is required' });
   }
-  if (value.type === 'faculty' && value.maxDefensesPerDay === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ['maxDefensesPerDay'], message: 'Set a daily defense limit for faculty accounts' });
+  if (value.type !== 'student' && value.maxDefensesPerDay === undefined) context.addIssue({ code: z.ZodIssueCode.custom, path: ['maxDefensesPerDay'], message: 'Set a daily defense limit for faculty accounts' });
 });
 export type UserInput = z.infer<typeof userSchema>;
 export const groupSchema = z.object({ title: z.string().min(2), memberIds: z.string().min(1), adviser: z.string().min(1), projectArea: z.string().min(1) });

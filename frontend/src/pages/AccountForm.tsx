@@ -72,10 +72,10 @@ export function AccountForm() {
           <label><span>Middle name <span className="muted">(Optional)</span></span><input autoComplete="additional-name" {...register('middleName')} /></label>
           <label>Last name<input autoComplete="family-name" {...register('lastName')} />{errors.lastName && <small className="field-error">{errors.lastName.message}</small>}</label>
         </div>
-        <label>Generated email<input type="email" value={generatedEmail} readOnly placeholder="Complete first and last name to generate email" /><small className="muted">{type === 'faculty' ? 'Faculty accounts use @faculty.com.' : 'Student accounts use @student.com.'} Middle name adds its first initial. Coordinator accounts use @coordinator.com.</small></label>
+        <label>Generated email<input type="email" value={generatedEmail} readOnly placeholder="Complete first and last name to generate email" /><small className="muted">{type === 'coordinator' ? 'Coordinator accounts use @coordinator.com.' : type === 'faculty' ? 'Faculty accounts use @faculty.com.' : 'Student accounts use @student.com.'} Middle name adds its first initial.</small></label>
       </>}
 
-      <label>Account type<select {...register('type')} disabled={edit}><option value="student">Student</option><option value="faculty">Faculty</option></select>{errors.type && <small className="field-error">{errors.type.message}</small>}</label>
+      <label>Account type<select {...register('type')} disabled={edit}><option value="student">Student</option><option value="faculty">Faculty</option><option value="coordinator">Coordinator</option></select>{errors.type && <small className="field-error">{errors.type.message}</small>}</label>
       <label>Department / Academic program<select {...register('department')}>
         <option value="">Select a department or program</option>
         {selectedDepartment && !isListedDepartment && <option value={selectedDepartment}>{selectedDepartment}</option>}
@@ -83,7 +83,7 @@ export function AccountForm() {
           {programs.map((program) => <option key={program} value={program}>{program}</option>)}
         </optgroup>)}
       </select></label>
-      {type === 'faculty' && <>
+      {type !== 'student' && <>
         <label>Expertise tags <span className="muted">comma separated</span><input {...register('expertiseTags')} placeholder="software engineering, data science" /></label>
         <div className="form-two">
           <label>Maximum defenses per day<input type="number" min="1" max="6" {...register('maxDefensesPerDay')} />{errors.maxDefensesPerDay && <small className="field-error">{errors.maxDefensesPerDay.message}</small>}</label>

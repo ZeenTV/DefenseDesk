@@ -11,14 +11,16 @@ exports.list = asyncHandler(async (req, res) => { const users = await User.find(
 exports.get = asyncHandler(async (req, res) => { const user = await User.findById(req.params.id); if (!user) throw new AppError('Record not found', 404); res.json(safeUser(user)); });
 exports.create = asyncHandler(async (req, res) => {
   const body = req.body || {};
-  if (!['student', 'faculty'].includes(body.type)) throw new AppError('Type must be student or faculty', 400);
+  if (!['student', 'faculty', 'coordinator'].includes(body.type)) throw new AppError('Type must be student, faculty, or coordinator', 400);
+  const accountType = body.type === 'coordinator' ? 'faculty' : body.type;
   const password = temporaryPassword();
   const emailLocalPart = String(body.email || '').split('@')[0];
-  const emailDomain = body.type === 'faculty' ? 'faculty.com' : 'student.com';
-  const details = { name: body.name, email: `${emailLocalPart}@${emailDomain}`, password, type: body.type, department: body.department, mustChangePassword: true };
-  if (body.type === 'faculty') {
+  const emailDomain = body.type === 'coordinator' ? 'coordinator.com' : accountType === 'faculty' ? 'faculty.com' : 'student.com';
+  const details = { name: body.name, email: `${emailLocalPart}@${emailDomain}`, password, type: accountType, department: body.department, mustChangePassword: true };
+  if (accountType === 'faculty') {
     if (!Number.isInteger(body.maxDefensesPerDay) || body.maxDefensesPerDay < 1 || body.maxDefensesPerDay > 6) throw new AppError('Faculty maxDefensesPerDay must be between 1 and 6', 400);
-    Object.assign(details, { roles: ['panelist'], expertiseTags: body.expertiseTags, canChair: body.canChair ?? false, maxDefensesPerDay: body.maxDefensesPerDay });
+    const roles = body.type === 'coordinator' ? ['panelist', 'coordinator'] : ['panelist'];
+    Object.assign(details, { roles, expertiseTags: body.expertiseTags, canChair: body.canChair ?? false, maxDefensesPerDay: body.maxDefensesPerDay });
   }
   const user = await User.create(details);
   res.status(201).json({ user: safeUser(user), temporaryPassword: password });
