@@ -84,7 +84,7 @@ export function AccountForm() {
         </optgroup>)}
       </select></label>
       {type !== 'student' && <>
-        <label>Expertise tags <span className="muted">comma separated</span><input {...register('expertiseTags')} placeholder="software engineering, data science" /></label>
+        <label><span className="field-label-row">Expertise tags <span className="muted">comma separated</span></span><input {...register('expertiseTags')} placeholder="software engineering, data science" /></label>
         <div className="form-two">
           <label>Maximum defenses per day<input type="number" min="1" max="6" {...register('maxDefensesPerDay')} />{errors.maxDefensesPerDay && <small className="field-error">{errors.maxDefensesPerDay.message}</small>}</label>
           <label className="check-label"><input type="checkbox" {...register('canChair')} /> Eligible to chair defenses</label>

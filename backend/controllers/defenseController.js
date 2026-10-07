@@ -14,10 +14,10 @@ const validateDefense = async (data, excludingId) => {
   const startTime = new Date(data.startTime);
   const endTime = new Date(data.endTime);
   if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime()) || endTime <= startTime) throw new AppError('End time must be after start time', 400);
-  if (!Array.isArray(data.members) || data.members.length !== 2 || new Set(panelIds(data)).size !== 3) throw new AppError('Panel must contain one chair and two distinct members', 400);
+  if (!Array.isArray(data.members) || data.members.length < 2 || new Set(panelIds(data)).size !== data.members.length + 1) throw new AppError('Panel must contain one chair and at least two distinct members', 400);
   const [group, room, faculty] = await Promise.all([Group.findById(data.group), Room.findById(data.room), User.find({ _id: { $in: panelIds(data) }, type: 'faculty', isActive: true })]);
   if (!group || !room) throw new AppError('Group or room not found', 404);
-  if (faculty.length !== 3) throw new AppError('Every panelist must be an active faculty account', 400);
+  if (faculty.length !== panelIds(data).length) throw new AppError('Every panelist must be an active faculty account', 400);
   const chair = faculty.find((user) => user._id.toString() === data.chair.toString());
   if (!chair?.canChair) throw new AppError('The selected chair is not eligible to chair defenses', 400);
   if (panelIds(data).includes(group.adviser.toString())) throw new AppError('The group adviser cannot serve on the panel', 400);

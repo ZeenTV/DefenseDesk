@@ -3,7 +3,7 @@ const defenseSchema = new mongoose.Schema({
   group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true, unique: true },
   room: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
   chair: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  members: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }], validate: [(items) => items.length === 2, 'Exactly two panel members are required'] },
+  members: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }], validate: [(items) => items.length >= 2, 'At least two panel members are required'] },
   startTime: { type: Date, required: true }, endTime: { type: Date, required: true },
   status: { type: String, enum: ['scheduled', 'defended', 'revisions', 'cleared'], default: 'scheduled' },
 }, { timestamps: true, strict: true });

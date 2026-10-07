@@ -28,7 +28,7 @@ export const groupSchema = z.object({ title: z.string().min(2), memberIds: z.str
 export type GroupInput = z.infer<typeof groupSchema>;
 export const roomSchema = z.object({ name: z.string().min(1), capacity: z.coerce.number().min(1), equipment: z.string().optional() });
 export type RoomInput = z.infer<typeof roomSchema>;
-export const defenseSchema = z.object({ group: z.string().min(1), room: z.string().min(1), chair: z.string().min(1), member1: z.string().min(1), member2: z.string().min(1), startTime: z.string().min(1), endTime: z.string().min(1) }).refine((value) => value.member1 !== value.member2, { message: 'Choose two different panel members', path: ['member2'] });
+export const defenseSchema = z.object({ group: z.string().min(1), room: z.string().min(1), chair: z.string().min(1), members: z.array(z.string().min(1)).min(2, 'Choose at least two panel members'), startTime: z.string().min(1), endTime: z.string().min(1) }).refine((value) => new Set([value.chair, ...value.members]).size === value.members.length + 1, { message: 'Choose different faculty for the chair and panel members', path: ['members'] });
 export type DefenseInput = z.infer<typeof defenseSchema>;
 export const evaluationSchema = z.object({ scores: z.array(z.object({ criterion: z.string().min(1), score: z.coerce.number().min(0).max(100) })).min(1), remarks: z.string().optional() });
 export type EvaluationInput = z.infer<typeof evaluationSchema>;
