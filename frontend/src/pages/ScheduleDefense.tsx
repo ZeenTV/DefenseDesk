@@ -11,6 +11,7 @@ import { notify } from '../context/ToastContext';
 
 interface Suggestion { chair: User | null; members: User[]; eligibleFaculty: (User & { expertiseOverlap: number; currentWorkload: number })[]; }
 const localInputValue = (date: string) => new Date(new Date(date).getTime() - new Date(date).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+const localTimeValue = (date: string) => localInputValue(date).slice(11, 16);
 
 export function ScheduleDefense() {
   const { id } = useParams();
@@ -46,7 +47,7 @@ export function ScheduleDefense() {
         setValue('chair', value.chair._id);
         setValue('members', value.members.map((member) => member._id));
         setValue('startTime', localInputValue(value.startTime));
-        setValue('endTime', localInputValue(value.endTime));
+        setValue('endTime', localTimeValue(value.endTime));
       }
     }).catch((cause: unknown) => setServerError((cause as { response?: { data?: { message?: string } } }).response?.data?.message || 'Could not load scheduling options')).finally(() => setLoading(false));
   }, [id, setValue]);
@@ -76,7 +77,8 @@ export function ScheduleDefense() {
 
   const submit = async (values: DefenseInput) => {
     setServerError('');
-    const payload = { group: values.group, room: values.room, chair: values.chair, members: values.members, startTime: new Date(values.startTime).toISOString(), endTime: new Date(values.endTime).toISOString() };
+    const endDateTime = `${values.startTime.slice(0, 10)}T${values.endTime}`;
+    const payload = { group: values.group, room: values.room, chair: values.chair, members: values.members, startTime: new Date(values.startTime).toISOString(), endTime: new Date(endDateTime).toISOString() };
     try {
       if (id) await api.put(`/defenses/${id}`, payload);
       else await api.post('/defenses', payload);
@@ -93,7 +95,7 @@ export function ScheduleDefense() {
     <form className="form-card form-stack" onSubmit={handleSubmit(submit)}>
       <label>Capstone group<select {...register('group')}><option value="">Select a group</option>{groups.map((group) => <option key={group._id} value={group._id}>{group.title} · adviser {group.adviser.name}</option>)}</select>{errors.group && <small className="field-error">{errors.group.message}</small>}</label>
       {suggestions && <aside className="suggestion-box"><div className="section-title"><div><span className="eyebrow">PANEL SUGGESTIONS</span><h2>Suggested faculty</h2></div><button className="button button-quiet" type="button" onClick={applySuggestions}>Use suggestions</button></div><div className="tag-row">{suggestions.chair && <span>Chair: {suggestions.chair.name}</span>}{suggestions.members.map((person) => <span key={person._id}>Member: {person.name}</span>)}</div><p>Suggestions rank expertise overlap, then current scheduled workload. They are optional: choose any active faculty for panel members. Chairs must be chair-eligible. The adviser cannot serve; the server checks conflicts and daily limits when you save.</p></aside>}
-      <div className="form-two"><label>Date and time<input type="datetime-local" {...register('startTime')} />{errors.startTime && <small className="field-error">{errors.startTime.message}</small>}</label><label>End time<input type="datetime-local" {...register('endTime')} />{errors.endTime && <small className="field-error">{errors.endTime.message}</small>}</label></div>
+      <div className="form-two"><label>Date and time<input type="datetime-local" {...register('startTime')} />{errors.startTime && <small className="field-error">{errors.startTime.message}</small>}</label><label>End time<input type="time" {...register('endTime')} />{errors.endTime && <small className="field-error">{errors.endTime.message}</small>}</label></div>
       <label>Room<select {...register('room')}><option value="">Select a room</option>{rooms.map((room) => <option key={room._id} value={room._id}>{room.name}</option>)}</select>{errors.room && <small className="field-error">{errors.room.message}</small>}</label>
       <div className="form-two">
         <label>Chair<select {...register('chair', { onChange: (event) => { const chairId = event.target.value; setValue('members', selectedMembers.filter((memberId) => memberId !== chairId), { shouldDirty: true, shouldValidate: true }); } })}><option value="">Select chair</option>{panelFaculty.filter((person) => person.canChair).map((person) => <option key={person._id} value={person._id}>{person.name}</option>)}</select>{errors.chair && <small className="field-error">{errors.chair.message}</small>}</label>

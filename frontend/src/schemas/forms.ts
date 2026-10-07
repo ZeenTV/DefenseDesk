@@ -28,7 +28,14 @@ export const groupSchema = z.object({ title: z.string().min(2), memberIds: z.str
 export type GroupInput = z.infer<typeof groupSchema>;
 export const roomSchema = z.object({ name: z.string().min(1), capacity: z.coerce.number().min(1), equipment: z.string().optional() });
 export type RoomInput = z.infer<typeof roomSchema>;
-export const defenseSchema = z.object({ group: z.string().min(1), room: z.string().min(1), chair: z.string().min(1), members: z.array(z.string().min(1)).min(1, 'Choose at least one panel member'), startTime: z.string().min(1), endTime: z.string().min(1) }).refine((value) => new Set([value.chair, ...value.members]).size === value.members.length + 1, { message: 'Choose different faculty for the chair and panel members', path: ['members'] });
+export const defenseSchema = z.object({ group: z.string().min(1), room: z.string().min(1), chair: z.string().min(1), members: z.array(z.string().min(1)).min(1, 'Choose at least one panel member'), startTime: z.string().min(1), endTime: z.string().min(1) }).refine((value) => new Set([value.chair, ...value.members]).size === value.members.length + 1, { message: 'Choose different faculty for the chair and panel members', path: ['members'] }).refine((value) => {
+  const start = new Date(value.startTime);
+  const [hours, minutes] = value.endTime.split(':').map(Number);
+  if (Number.isNaN(start.getTime()) || !Number.isInteger(hours) || !Number.isInteger(minutes)) return false;
+  const end = new Date(start);
+  end.setHours(hours, minutes, 0, 0);
+  return end > start;
+}, { message: 'End time must be later than start time on the same day', path: ['endTime'] });
 export type DefenseInput = z.infer<typeof defenseSchema>;
 export const evaluationSchema = z.object({ scores: z.array(z.object({ criterion: z.string().min(1), score: z.coerce.number().min(0).max(100) })).min(1), remarks: z.string().optional() });
 export type EvaluationInput = z.infer<typeof evaluationSchema>;
