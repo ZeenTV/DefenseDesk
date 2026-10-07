@@ -8,11 +8,85 @@ import { Page } from './Page';
 import { Loading, ErrorState } from '../components/common/States';
 import type { Group, User } from '../types';
 import { notify } from '../context/ToastContext';
+
 export function GroupForm() {
-  const { id } = useParams(); const navigate = useNavigate(); const [users, setUsers] = useState<User[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
-  const { control, register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<GroupInput>({ resolver: zodResolver(groupSchema), defaultValues: { memberIds: '' } });
-  useEffect(() => { void Promise.all([api.get<User[]>('/users'), id ? api.get<Group>(`/groups/${id}`) : Promise.resolve(null)]).then(([people, group]) => { setUsers(people.data); if (group) reset({ title: group.data.title, memberIds: group.data.members.map((member) => member._id).join(','), adviser: group.data.adviser._id, projectArea: group.data.projectArea }); }).catch((cause: unknown) => setError((cause as { response?: { data?: { message?: string } } }).response?.data?.message || 'Could not load group form')).finally(() => setLoading(false)); }, [id, reset]);
-  const submit = async (values: GroupInput) => { setError(''); const payload = { title: values.title, adviser: values.adviser, projectArea: values.projectArea, members: values.memberIds.split(',').map((value) => value.trim()).filter(Boolean) }; try { if (id) await api.put(`/groups/${id}`, payload); else await api.post('/groups', payload); notify(id ? 'Group updated.' : 'Group created.'); navigate('/groups'); } catch (cause: unknown) { setError((cause as { response?: { data?: { message?: string } } }).response?.data?.message || 'Could not save group'); } };
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const students = users.filter((person) => person.type === 'student');
+  const { control, register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<GroupInput>({
+    resolver: zodResolver(groupSchema),
+    defaultValues: { memberIds: '' },
+  });
+
+  useEffect(() => {
+    void Promise.all([
+      api.get<User[]>('/users'),
+      id ? api.get<Group>(`/groups/${id}`) : Promise.resolve(null),
+    ]).then(([people, group]) => {
+      setUsers(people.data);
+      if (group) reset({
+        title: group.data.title,
+        memberIds: group.data.members.map((member) => member._id).join(','),
+        adviser: group.data.adviser._id,
+        projectArea: group.data.projectArea,
+      });
+    }).catch((cause: unknown) => {
+      setError((cause as { response?: { data?: { message?: string } } }).response?.data?.message || 'Could not load group form');
+    }).finally(() => setLoading(false));
+  }, [id, reset]);
+
+  const submit = async (values: GroupInput) => {
+    setError('');
+    const payload = {
+      title: values.title,
+      adviser: values.adviser,
+      projectArea: values.projectArea,
+      members: values.memberIds.split(',').map((value) => value.trim()).filter(Boolean),
+    };
+    try {
+      if (id) await api.put(`/groups/${id}`, payload);
+      else await api.post('/groups', payload);
+      notify(id ? 'Group updated.' : 'Group created.');
+      navigate('/groups');
+    } catch (cause: unknown) {
+      setError((cause as { response?: { data?: { message?: string } } }).response?.data?.message || 'Could not save group');
+    }
+  };
+
   if (loading) return <Loading />;
-  return <Page eyebrow="GROUP MANAGEMENT" title={id ? 'Edit group' : 'Create group'} description="Choose student members and a faculty adviser."><form className="form-card form-stack" onSubmit={handleSubmit(submit)}><label>Capstone title<input {...register('title')} />{errors.title && <small className="field-error">{errors.title.message}</small>}</label><label>Project area<input {...register('projectArea')} placeholder="e.g. information systems" />{errors.projectArea && <small className="field-error">{errors.projectArea.message}</small>}</label><label>Faculty adviser<select {...register('adviser')}><option value="">Select adviser</option>{users.filter((person) => person.type === 'faculty').map((person) => <option key={person._id} value={person._id}>{person.name}</option>)}</select>{errors.adviser && <small className="field-error">{errors.adviser.message}</small>}</label><label>Student members <span className="muted">Hold Ctrl/Command to select several</span><Controller control={control} name="memberIds" render={({ field }) => <select multiple className="multi-select" value={field.value ? field.value.split(',').filter(Boolean) : []} onChange={(event) => field.onChange(Array.from(event.target.selectedOptions).map((option) => option.value).join(','))} aria-label="Student members">{users.filter((person) => person.type === 'student').map((person) => <option key={person._id} value={person._id}>{person.name}</option>)}</select>} />{errors.memberIds && <small className="field-error">{errors.memberIds.message}</small>}</label><div className="form-actions"><Link className="button button-quiet" to="/groups">Cancel</Link><button className="button button-primary" disabled={isSubmitting}>Save group</button></div>{error && <ErrorState message={error} />}</form></Page>;
+
+  return <Page eyebrow="GROUP MANAGEMENT" title={id ? 'Edit group' : 'Create group'} description="Choose student members and a faculty adviser.">
+    <form className="form-card form-stack" onSubmit={handleSubmit(submit)}>
+      <label>Capstone title<input {...register('title')} />{errors.title && <small className="field-error">{errors.title.message}</small>}</label>
+      <label>Project area<input {...register('projectArea')} placeholder="e.g. information systems" />{errors.projectArea && <small className="field-error">{errors.projectArea.message}</small>}</label>
+      <label>Faculty adviser<select {...register('adviser')}><option value="">Select adviser</option>{users.filter((person) => person.type === 'faculty').map((person) => <option key={person._id} value={person._id}>{person.name}</option>)}</select>{errors.adviser && <small className="field-error">{errors.adviser.message}</small>}</label>
+      <div className="student-field">
+        <div className="student-field-heading">
+          <span className="student-field-label">Student members</span>
+          <span className="muted">Choose one or more students.</span>
+        </div>
+        <Controller control={control} name="memberIds" render={({ field }) => {
+          const selectedIds = field.value ? field.value.split(',').filter(Boolean) : [];
+          return <div className="student-picker" role="group" aria-label="Student members">
+            {students.length ? students.map((person) => <label className="student-option" key={person._id}>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(person._id)}
+                onChange={(event) => field.onChange(event.target.checked
+                  ? [...selectedIds, person._id].join(',')
+                  : selectedIds.filter((studentId) => studentId !== person._id).join(','))}
+              />
+              <span>{person.name}</span>
+            </label>) : <p className="student-picker-empty">No student accounts available.</p>}
+          </div>;
+        }} />
+        {errors.memberIds && <small className="field-error">{errors.memberIds.message}</small>}
+      </div>
+      <div className="form-actions"><Link className="button button-quiet" to="/groups">Cancel</Link><button className="button button-primary" disabled={isSubmitting}>Save group</button></div>
+      {error && <ErrorState message={error} />}
+    </form>
+  </Page>;
 }
