@@ -8,6 +8,7 @@ import { Page } from './Page';
 import { Loading, ErrorState } from '../components/common/States';
 import type { User } from '../types';
 import { academicPrograms } from '../constants/academicPrograms';
+import { notify } from '../context/ToastContext';
 
 export function AccountForm() {
   const { id } = useParams();
@@ -46,7 +47,7 @@ export function AccountForm() {
     try {
       if (id) {
         await api.put(`/users/${id}`, payload);
-        window.alert('Account updated.');
+        notify('Account updated.');
         navigate('/accounts');
       } else {
         const { data } = await api.post('/users', payload);
