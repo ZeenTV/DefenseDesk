@@ -10,7 +10,7 @@ const cookieOptions = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    // Kapag magkaiba ang frontend at backend domain sa Vercel, kailangan 'none' at secure: true
+    // Kailangan 'none' kapag magkaiba ang domain/subdomain ng frontend at backend sa Vercel
     sameSite: isProduction ? 'none' : 'lax',
     secure: isProduction,
     expires: new Date(Date.now() + expiryMs(process.env.JWT_EXPIRES_IN))
