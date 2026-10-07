@@ -20,7 +20,7 @@ test('room capacity must be at least one', async () => {
   await assert.rejects(room.validate(), /capacity/);
 });
 
-test('defense schema rejects reversed times and panels with fewer than two members', async () => {
+test('defense schema rejects reversed times and panels without a member', async () => {
   const defense = new Defense({ group: '507f1f77bcf86cd799439011', room: '507f1f77bcf86cd799439012', chair: '507f1f77bcf86cd799439013', members: ['507f1f77bcf86cd799439014'], startTime: '2026-10-07T11:00:00Z', endTime: '2026-10-07T10:00:00Z' });
   await assert.rejects(defense.validate());
 });
