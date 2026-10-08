@@ -103,11 +103,17 @@ export function Assignments() {
         <h2 id="eval-title">{active.group.title}</h2>
         <p>Enter one or more criteria and score each from 0 to 100.</p>
         <form className="form-stack" onSubmit={form.handleSubmit(submit)}>
-          {scoreFields.fields.map((field, index) => <div className="score-row" key={field.id}>
-            <label>Criterion<input {...form.register(`scores.${index}.criterion`)} placeholder="Enter criterion name" />{form.formState.errors.scores?.[index]?.criterion && <small className="field-error">{form.formState.errors.scores[index]?.criterion?.message}</small>}</label>
-            <label>Score from 0 to 100<input type="number" min="0" max="100" {...form.register(`scores.${index}.score`)} />{form.formState.errors.scores?.[index]?.score && <small className="field-error">{form.formState.errors.scores[index]?.score?.message}</small>}</label>
-            {scoreFields.fields.length > 1 && <button type="button" className="link-button danger-link score-remove" onClick={() => scoreFields.remove(index)}>Remove</button>}
-          </div>)}
+          {scoreFields.fields.map((field, index) => {
+            const scoreRegistration = form.register(`scores.${index}.score`);
+            return <div className="score-row" key={field.id}>
+              <label>Criterion<input {...form.register(`scores.${index}.criterion`)} placeholder="Enter criterion name" />{form.formState.errors.scores?.[index]?.criterion && <small className="field-error">{form.formState.errors.scores[index]?.criterion?.message}</small>}</label>
+              <label>Score from 0 to 100<input {...scoreRegistration} type="number" min="0" max="100" onChange={(event) => {
+                if (event.currentTarget.value !== '' && Number(event.currentTarget.value) > 100) event.currentTarget.value = '100';
+                void scoreRegistration.onChange(event);
+              }} />{form.formState.errors.scores?.[index]?.score && <small className="field-error">{form.formState.errors.scores[index]?.score?.message}</small>}</label>
+              {scoreFields.fields.length > 1 && <button type="button" className="link-button danger-link score-remove" onClick={() => scoreFields.remove(index)}>Remove</button>}
+            </div>;
+          })}
           <button type="button" className="button button-quiet" onClick={() => scoreFields.append({ criterion: '', score: 0 })}>Add criterion</button>
           <label>Remarks<textarea rows={3} {...form.register('remarks')} /></label>
           {serverError && <ErrorState message={serverError} />}
