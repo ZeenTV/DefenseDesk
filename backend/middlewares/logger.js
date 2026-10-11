@@ -1,5 +1,10 @@
 module.exports = (req, res, next) => {
   const startedAt = Date.now();
-  res.on('finish', () => console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - startedAt}ms`));
+
+  res.on('finish', () => {
+    const duration = Date.now() - startedAt;
+    console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+  });
+
   next();
 };
