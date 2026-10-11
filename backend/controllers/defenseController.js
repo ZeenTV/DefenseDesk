@@ -79,3 +79,11 @@ exports.mine = asyncHandler(async (req, res) => {
   const averageScore = allScores.length ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length : null;
   return res.json({ group, defense, averageScore });
 });
+exports.availability = asyncHandler(async (req, res) => {
+  if (!req.query.date || Number.isNaN(new Date(req.query.date).getTime())) throw new AppError('A valid date query parameter is required', 400);
+  const rooms = await Room.find().sort({ name: 1 });
+  const dayStart = new Date(req.query.date); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+  const bookings = await Defense.find({ startTime: { $lt: dayEnd }, endTime: { $gt: dayStart } }).populate('room', 'name');
+  res.json({ date: req.query.date, rooms: rooms.map((room) => ({ room, booked: bookings.filter((defense) => defense.room?._id.equals(room._id)).map((defense) => ({ startTime: defense.startTime, endTime: defense.endTime })) })), message: 'Room hours and slot duration are unspecified; availability slots cannot yet be calculated.' });
+});
