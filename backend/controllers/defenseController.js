@@ -87,3 +87,5 @@ exports.availability = asyncHandler(async (req, res) => {
   const bookings = await Defense.find({ startTime: { $lt: dayEnd }, endTime: { $gt: dayStart } }).populate('room', 'name');
   res.json({ date: req.query.date, rooms: rooms.map((room) => ({ room, booked: bookings.filter((defense) => defense.room?._id.equals(room._id)).map((defense) => ({ startTime: defense.startTime, endTime: defense.endTime })) })), message: 'Room hours and slot duration are unspecified; availability slots cannot yet be calculated.' });
 });
+
+//hello
