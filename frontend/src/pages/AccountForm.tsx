@@ -10,23 +10,40 @@ import type { User } from '../types';
 import { academicPrograms } from '../constants/academicPrograms';
 import { notify } from '../context/ToastContext';
 
+/**
+ * Account form (coordinator only).
+ * One form used for two jobs:
+ *  - Create account (/accounts/new): name and email are generated automatically,
+ *    and a temporary password is shown once after saving.
+ *  - Edit account (/accounts/:id/edit): the existing details are loaded into the form.
+ */
 export function AccountForm() {
+  // If the URL has an :id we are editing an existing account; otherwise we are creating one.
   const { id } = useParams();
   const edit = Boolean(id);
   const navigate = useNavigate();
+  // Page state: loading is only true while fetching an account to edit.
+  // error holds a message to show; temporaryPassword and createdEmail hold the new account's login details.
   const [loading, setLoading] = useState(edit);
   const [error, setError] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState('');
   const [createdEmail, setCreatedEmail] = useState('');
+  // Form setup: react-hook-form handles the inputs and Zod (userSchema) validates them.
+  // New accounts start as a student.
   const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = useForm<UserInput>({ resolver: zodResolver(userSchema), defaultValues: { type: 'student' } });
+  // watch() reads the current form values as the user types, so the page can react to them.
   const type = watch('type');
   const firstName = watch('firstName') || '';
   const middleName = watch('middleName') || '';
   const lastName = watch('lastName') || '';
   const selectedDepartment = watch('department') || '';
+  // Build the email from the typed name and account type (shown read-only when creating).
+  // The department select also keeps a saved value that is not in the standard list.
   const generatedEmail = generateAccountEmail(firstName, middleName, lastName, type);
   const isListedDepartment = academicPrograms.some(({ programs }) => (programs as readonly string[]).includes(selectedDepartment));
 
+  // When editing, load the account from GET /users/:id and fill the form with its details.
+  // Expertise tags are turned into a comma-separated string so they fit in one text box.
   useEffect(() => {
     if (!id) return;
     void api.get<User>(`/users/${id}`)
@@ -35,9 +52,15 @@ export function AccountForm() {
       .finally(() => setLoading(false));
   }, [id, reset]);
 
+  // Runs when the form is submitted and passes validation.
+  // Edit mode: PUT /users/:id, show a message, then go back to the Accounts list.
+  // Create mode: POST /users, then show the generated email and temporary password.
   const submit = async (values: UserInput) => {
     setError('');
+    // The first/middle/last name fields only exist in the form, so remove them from the data sent to the server.
     const { firstName: submittedFirstName, middleName: submittedMiddleName, lastName: submittedLastName, ...accountValues } = values;
+    // When creating, build the full name and email from the name parts. When editing, keep the existing ones.
+    // Expertise tags are split by commas and trimmed into a list, ignoring empty entries.
     const payload = {
       ...accountValues,
       name: edit ? values.name : buildAccountName(submittedFirstName || '', submittedMiddleName || '', submittedLastName || ''),
@@ -59,8 +82,17 @@ export function AccountForm() {
     }
   };
 
+  // While the account to edit is still loading, show a loading indicator instead of the form.
   if (loading) return <Loading />;
 
+  // What the page shows:
+  //  - Edit mode: full name and email inputs. Create mode: first, middle (optional) and last name
+  //    inputs plus a read-only generated email.
+  //  - Account type (cannot be changed while editing) and department / academic program.
+  //  - For faculty and coordinators only: expertise tags, maximum defenses per day,
+  //    and a checkbox for being eligible to chair defenses.
+  //  - Cancel and Save/Create buttons, an error message if saving fails, and a card that
+  //    shows the new account's credentials once. The password cannot be viewed again.
   return <Page eyebrow="ACCOUNT MANAGEMENT" title={edit ? 'Edit account' : 'Create account'} description="Accounts are provisioned by a coordinator and sign in with a temporary password.">
     <form className="form-card form-stack" onSubmit={handleSubmit(submit)}>
       {edit ? <div className="form-two">
