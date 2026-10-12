@@ -60,7 +60,10 @@ export function GroupForm() {
 
   return <Page eyebrow="GROUP MANAGEMENT" title={id ? 'Edit group' : 'Create group'} description="Choose student members and a faculty adviser.">
     <form className="form-card form-stack" onSubmit={handleSubmit(submit)}>
-      
+      <label>Capstone title<input {...register('title')} />{errors.title && <small className="field-error">{errors.title.message}</small>}</label>
+      <label>Project area<input {...register('projectArea')} placeholder="e.g. information systems" />{errors.projectArea && <small className="field-error">{errors.projectArea.message}</small>}</label>
+      <label>Faculty adviser<select {...register('adviser')}><option value="">Select adviser</option>{users.filter((person) => person.type === 'faculty').map((person) => <option key={person._id} value={person._id}>{person.name}</option>)}</select>{errors.adviser && <small className="field-error">{errors.adviser.message}</small>}</label>
+      <div className="student-field">
         <div className="student-field-heading">
           <span className="student-field-label">Student members</span>
           <span className="muted">Choose one or more students.</span>
